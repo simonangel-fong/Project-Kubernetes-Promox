@@ -1,19 +1,6 @@
 #!/bin/bash
 
 echo
-echo "# ##############################"
-echo "# set hostname"
-echo "# ##############################"
-echo
-sudo hostnamectl set-hostname minikube
-
-# add hosts
-sudo tee -a /etc/hosts <<EOF
-192.168.100.150   minikube
-127.0.0.1        localhost
-EOF
-
-echo
 echo "# ########################################"
 echo "# Netplan Static IP Configuration"
 echo "# ########################################"
@@ -27,7 +14,7 @@ network:
     ens18:
       dhcp4: false
       addresses:
-        - 192.168.10.150/24
+        - 192.168.100.150/24
       routes:
         - to: default
           via: 192.168.100.254
@@ -41,6 +28,21 @@ sudo netplan apply
 # confirm
 ip a
 ping -c 3 google.com
+
+echo
+echo "# ##############################"
+echo "# set hostname"
+echo "# ##############################"
+echo
+sudo hostnamectl set-hostname minikube
+
+# add hosts
+sudo tee -a /etc/hosts <<EOF
+192.168.100.150   minikube
+127.0.0.1        localhost
+EOF
+
+ping -c3 minikube
 
 echo
 echo "# ########################################"
@@ -70,7 +72,7 @@ echo "# ##############################"
 echo 
 # uninstall all conflicting packages
 for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
-  sudo apt-get remove $pkg;
+  sudo apt-get remove -y $pkg;
 done
 
 # Add Docker's official GPG key:
@@ -102,7 +104,7 @@ echo "# ##############################"
 echo 
 
 # Download the latest release
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
 # Install kubectl
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
@@ -116,11 +118,10 @@ echo "# Install minikube"
 echo "# ##############################"
 echo 
 # install the latest minikube stable release on x86-64 Linux using Debian package
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
+sudo curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
 sudo dpkg -i minikube_latest_amd64.deb
 
 # use unprivilege user, due to minikube cannot start as root.
-su - ubuntuadmin
 sudo usermod -aG docker $USER && newgrp docker
 
 # confirm
@@ -161,3 +162,4 @@ EOF
 sudo systemctl daemon-reload
 # enable
 sudo systemctl enable --now minikube
+sudo systemctl status minikube --no-pager
